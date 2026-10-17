@@ -221,7 +221,7 @@ Each database includes an automated bootstrap script executed on first container
 
 ## 🛡 Nginx Reverse Proxy & Security
 
-Located in [nginx/conf.d/default.conf](nginx/conf.d/default.conf):
+Located in [nginx/default.conf](nginx/default.conf):
 - **Rate Limiting**: Protects your NestJS container from DDoS (configured for 20 req/sec with burst buffer of 40).
 - **Security Headers**: Injects `X-Frame-Options`, `X-Content-Type-Options: nosniff`, and `X-XSS-Protection`.
 - **Gzip Compression**: Compresses JSON payloads and static text automatically.
