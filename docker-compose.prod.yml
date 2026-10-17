@@ -1,0 +1,173 @@
+# ==============================================================================
+# DOCKER COMPOSE - PRODUCTION SIMULATION ENVIRONMENT
+# ==============================================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up --build -d
+#   docker compose -f docker-compose.prod.yml down
+#
+# Production Architecture Highlights:
+#   - Nginx Reverse Proxy serves as the ONLY public entrypoint on Port 80
+#   - NestJS API runs the hardened 'production' stage (compiled JS, non-root user)
+#   - Databases (Postgres, Mongo, Redis) are completely isolated on internal network
+#   - No database ports are exposed to the host machine for zero attack surface
+#   - Resource limits (CPU/Memory) configured for stability
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Nginx Reverse Proxy (Public Entrypoint)
+  # ----------------------------------------------------------------------------
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nest_nginx_prod
+    restart: always
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prod_network
+
+  # ----------------------------------------------------------------------------
+  # 2. NestJS Application (Production Image)
+  # ----------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: nest_api_prod
+    restart: always
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      MONGO_HOST: mongodb
+      REDIS_HOST: redis
+    # Notice: No ports exposed to host! Nginx routes traffic internally.
+    expose:
+      - "3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - prod_network
+
+  # ----------------------------------------------------------------------------
+  # 3. PostgreSQL Database (Internal)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: nest_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-nest_docker_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres_user} -d ${POSTGRES_DB:-nest_docker_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - prod_network
+
+  # ----------------------------------------------------------------------------
+  # 4. MongoDB Database (Internal)
+  # ----------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: nest_mongo_prod
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-mongo_user}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-mongo_secure_password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-nest_mongo_db}
+    volumes:
+      - mongo_prod_data:/data/db
+      - ./docker/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - prod_network
+
+  # ----------------------------------------------------------------------------
+  # 5. Redis Cache (Internal)
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: nest_redis_prod
+    restart: always
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    volumes:
+      - redis_prod_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - prod_network
+
+# ------------------------------------------------------------------------------
+# NETWORKS & VOLUMES
+# ------------------------------------------------------------------------------
+networks:
+  prod_network:
+    driver: bridge
+    name: nest_prod_network
+
+volumes:
+  postgres_prod_data:
+    name: nest_postgres_prod_data
+  mongo_prod_data:
+    name: nest_mongo_prod_data
+  redis_prod_data:
+    name: nest_redis_prod_data

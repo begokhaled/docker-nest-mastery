@@ -1,0 +1,36 @@
+version: 0.2
+
+# ==============================================================================
+# AWS CodeBuild Specification for Building & Pushing Multi-Stage Docker Image
+# ==============================================================================
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws --version
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_REPO_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/nest-docker-api"
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URL}
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}
+      - IMAGE_TAG=$(echo ${IMAGE_TAG} | cut -c 1-7)
+
+  build:
+    commands:
+      - echo "Build started on $(date)"
+      - echo "Building Docker image targeting the 'production' stage..."
+      # Use BuildKit for fast, cached multi-stage builds
+      - DOCKER_BUILDKIT=1 docker build --target production -t ${ECR_REPO_URL}:latest -t ${ECR_REPO_URL}:${IMAGE_TAG} .
+
+  post_build:
+    commands:
+      - echo "Build completed on $(date)"
+      - echo "Pushing images to Amazon ECR..."
+      - docker push ${ECR_REPO_URL}:latest
+      - docker push ${ECR_REPO_URL}:${IMAGE_TAG}
+      - echo "Writing image definitions artifact for ECS CodePipeline deploy..."
+      - printf '[{"name":"nest-api","imageUri":"%s"}]' ${ECR_REPO_URL}:${IMAGE_TAG} > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker + NestJS Production Mastery & Study Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --bg-card: rgba(22, 29, 47, 0.7);
+      --bg-card-hover: rgba(30, 41, 67, 0.85);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.4);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.2);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --code-bg: #0d121f;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 50% 80%, rgba(244, 63, 94, 0.06) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Layout */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 290px;
+      background: rgba(10, 15, 28, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .sidebar-search {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item.active {
+      color: #fff;
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.05));
+      border-left: 3px solid var(--primary);
+      font-weight: 600;
+    }
+
+    .nav-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .nav-item.active .nav-num {
+      color: var(--primary-light);
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      padding: 40px 60px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Hero Section */
+    .hero {
+      margin-bottom: 50px;
+      padding: 40px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--cyan), var(--rose));
+    }
+
+    .badge-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .pill-indigo { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .pill-cyan   { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .pill-emerald{ background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-amber  { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 60%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin-bottom: 28px;
+    }
+
+    .quick-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Section Styling */
+    section {
+      margin-bottom: 60px;
+      scroll-margin-top: 40px;
+    }
+
+    .section-header {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .section-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--primary-light);
+      background: rgba(99, 102, 241, 0.12);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .section-title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .section-desc {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .card-body {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    /* Study Step Flow */
+    .step-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    .step-flow::before {
+      content: '';
+      position: absolute;
+      left: 24px;
+      top: 30px;
+      bottom: 30px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--primary), var(--cyan), var(--rose));
+      opacity: 0.4;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 20px;
+      position: relative;
+    }
+
+    .step-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .step-content {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .step-content:hover {
+      border-color: var(--border-accent);
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .step-badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Code Blocks with Copy */
+    .code-block-container {
+      position: relative;
+      margin: 14px 0;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--code-bg);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .code-body {
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.86rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: var(--emerald);
+      color: #fff;
+    }
+
+    /* Comparison Table */
+    .comp-table-container {
+      overflow-x: auto;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      margin: 20px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Callout Box */
+    .callout {
+      padding: 20px;
+      border-radius: var(--radius-md);
+      margin: 20px 0;
+      display: flex;
+      gap: 14px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    .callout-amber {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .callout-rose {
+      background: rgba(244, 63, 94, 0.08);
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    .callout-emerald {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+
+    .callout-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+
+    .callout-content {
+      font-size: 0.92rem;
+      color: var(--text-main);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    /* Command Matrix Cards */
+    .command-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .command-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+    }
+
+    .cmd-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--cyan);
+      font-size: 0.95rem;
+    }
+
+    .cmd-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .cmd-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Tabs Component */
+    .tab-container {
+      margin: 20px 0;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app-container { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: relative; }
+      .main-content { padding: 20px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon">🐳</div>
+      <div>
+        <div class="brand-title">Docker + NestJS</div>
+        <div class="brand-subtitle">Mastery Blueprint</div>
+      </div>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="cmdSearch" class="search-input" placeholder="🔍 Search commands or topics...">
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#overview" class="nav-item active"><span class="nav-num">01</span> Architecture Blueprint</a>
+      <a href="#study-curriculum" class="nav-item"><span class="nav-num">02</span> Study Curriculum</a>
+      <a href="#dockerfile" class="nav-item"><span class="nav-num">03</span> Multi-Stage Dockerfile</a>
+      <a href="#stages" class="nav-item"><span class="nav-num">04</span> Dev vs. Prod Stages</a>
+      <a href="#nodemon" class="nav-item"><span class="nav-num">05</span> Nodemon & Hot Reload</a>
+      <a href="#databases" class="nav-item"><span class="nav-num">06</span> Postgres, Mongo & Redis</a>
+      <a href="#bug-fix" class="nav-item"><span class="nav-num">07</span> The Schema Collision Fix</a>
+      <a href="#nginx" class="nav-item"><span class="nav-num">08</span> Nginx Reverse Proxy</a>
+      <a href="#aws" class="nav-item"><span class="nav-num">09</span> AWS Cloud Transition</a>
+      <a href="#commands" class="nav-item"><span class="nav-num">10</span> Command Matrix</a>
+      <a href="#testing" class="nav-item"><span class="nav-num">11</span> Live Testing Cheatsheet</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- HERO -->
+    <div class="hero" id="overview">
+      <div class="badge-pill-row">
+        <span class="pill pill-indigo">NestJS 10</span>
+        <span class="pill pill-cyan">Docker Compose v2</span>
+        <span class="pill pill-emerald">PostgreSQL 16</span>
+        <span class="pill pill-amber">MongoDB 7</span>
+        <span class="pill pill-cyan">Redis 7</span>
+        <span class="pill pill-indigo">Nginx 1.25</span>
+        <span class="pill pill-emerald">AWS Fargate Ready</span>
+      </div>
+      <h1>Docker + NestJS Reference Study Guide</h1>
+      <p>
+        Your all-in-one educational handbook covering how to containerize NestJS, manage multiple databases with health checks, use Nodemon exclusively in development, compile lightweight production images, front with Nginx, and deploy to AWS.
+      </p>
+
+      <div class="quick-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Containers Active</div>
+          <div class="stat-value" style="color: var(--emerald);">4 Containers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Dev Hot-Reload</div>
+          <div class="stat-value" style="color: var(--cyan);">Nodemon + Polling</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Prod Image Size</div>
+          <div class="stat-value" style="color: var(--primary-light);">~180 MB (Alpine)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Network Model</div>
+          <div class="stat-value" style="color: var(--amber);">Bridge Isolation</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: ARCHITECTURE -->
+    <section>
+      <div class="section-header">
+        <span class="section-badge">01</span>
+        <h2 class="section-title">High-Level Topology</h2>
+      </div>
+      <p class="section-desc">
+        Notice how development gives direct access to all database ports for local inspection, while production funnels everything exclusively through Nginx into an isolated private bridge network.
+      </p>
+
+      <div class="tab-container">
+        <div class="tab-buttons">
+          <button class="tab-btn active" onclick="switchTab('topo-dev', this)">Development Mode Topology</button>
+          <button class="tab-btn" onclick="switchTab('topo-prod', this)">Production Mode Topology</button>
+        </div>
+
+        <div id="topo-dev" class="tab-pane active">
+          <div class="card">
+            <div class="card-title">🛠️ Development Stack (<code>docker-compose.yml</code>)</div>
+            <div class="card-body">
+              <ul style="padding-left: 20px; line-height: 1.8;">
+                <li><strong>NestJS Container:</strong> Runs <code>nodemon</code> watching mounted <code>./src</code> volume. Exposes port <code>3000</code> and debugger <code>9229</code>.</li>
+                <li><strong>PostgreSQL 16:</strong> Host port <code>5432</code> open for tools like DBeaver, TablePlus, or pgAdmin.</li>
+                <li><strong>MongoDB 7:</strong> Host port <code>27017</code> open for MongoDB Compass.</li>
+                <li><strong>Redis 7:</strong> Host port <code>6379</code> open for RedisInsight or CLI.</li>
+                <li><strong>Health-Check Dependencies:</strong> <code>api</code> container does not boot until Postgres, Mongo, and Redis report <code>healthy</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div id="topo-prod" class="tab-pane">
+          <div class="card">
+            <div class="card-title">🚀 Production Stack (<code>docker-compose.prod.yml</code>)</div>
+            <div class="card-body">
+              <ul style="padding-left: 20px; line-height: 1.8;">
+                <li><strong>Nginx Proxy:</strong> Only public entrypoint on Port <code>80</code> (and <code>443</code>). Enforces rate-limiting (20 req/s), security headers, and gzip.</li>
+                <li><strong>NestJS Container:</strong> Runs compiled JS (<code>node dist/main.js</code>) as unprivileged non-root <code>node</code> user. <strong>No ports exposed to host.</strong></li>
+                <li><strong>Databases (Postgres, Mongo, Redis):</strong> Completely sealed inside internal network <code>prod_network</code>. Zero public attack surface.</li>
+                <li><strong>Resource Caps:</strong> Memory limits (512MB for API & DBs, 256MB for Redis) and CPU throttling.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: STUDY CURRICULUM -->
+    <section id="study-curriculum">
+      <div class="section-header">
+        <span class="section-badge">02</span>
+        <h2 class="section-title">Step-by-Step Study Curriculum</h2>
+      </div>
+      <p class="section-desc">
+        Follow these 7 sequential steps to study and master how all pieces connect together.
+      </p>
+
+      <div class="step-flow">
+
+        <!-- Step 1 -->
+        <div class="step-item">
+          <div class="step-circle">1</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Inspect Application Dependencies & Modules</span>
+              <span class="step-badge">package.json & src/app.module.ts</span>
+            </div>
+            <p>
+              Open <code>package.json</code> and review how NestJS integrates the three databases:
+            </p>
+            <ul style="padding-left: 20px; margin: 10px 0;">
+              <li><code>@nestjs/typeorm</code> & <code>pg</code> for PostgreSQL relational data</li>
+              <li><code>@nestjs/mongoose</code> & <code>mongoose</code> for MongoDB documents</li>
+              <li><code>ioredis</code> for custom resilient Redis caching and connection retries</li>
+            </ul>
+            <p>
+              Then inspect <code>src/app.module.ts</code> to see how asynchronous configuration loaders dynamically inject credentials from <code>.env</code>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-item">
+          <div class="step-circle">2</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Understand the 4-Stage Multi-Stage Dockerfile</span>
+              <span class="step-badge">Dockerfile</span>
+            </div>
+            <p>
+              Open <code>Dockerfile</code>. Identify each <code>FROM</code> statement:
+            </p>
+            <div class="code-block-container">
+              <div class="code-header">
+                <span>Dockerfile stage progression</span>
+                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <div class="code-body">FROM node:22-alpine AS base         # Layer 1: OS packages (dumb-init)
+FROM base AS development            # Layer 2: DevDependencies + nodemon
+FROM base AS build                  # Layer 3: Compiles TypeScript -> dist/
+FROM node:22-alpine AS production   # Layer 4: Minimal Alpine, unprivileged 'node' user</div>
+            </div>
+            <p>Notice that we copy <code>package*.json</code> before <code>COPY src ./src</code> to maximize Docker layer cache hits during builds!</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-item">
+          <div class="step-circle">3</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Analyze the Development Docker Compose File</span>
+              <span class="step-badge">docker-compose.yml</span>
+            </div>
+            <p>
+              Examine the health-check dependency graph. Instead of a basic <code>depends_on: [postgres]</code> which only waits for the container process to start, we use:
+            </p>
+            <div class="code-block-container">
+              <div class="code-header">
+                <span>Healthy Dependency Pattern</span>
+                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <div class="code-body">depends_on:
+  postgres:
+    condition: service_healthy
+  mongodb:
+    condition: service_healthy
+  redis:
+    condition: service_healthy</div>
+            </div>
+            <p>This guarantees that the databases are actually accepting TCP connections before NestJS boots.</p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-item">
+          <div class="step-circle">4</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Experience Nodemon Hot-Reloading in Real Time</span>
+              <span class="step-badge">Local Testing</span>
+            </div>
+            <p>
+              While <code>make dev-build</code> or <code>docker compose up</code> is running, open <code>src/main.ts</code> in your editor and add a test log line:
+            </p>
+            <div class="code-block-container">
+              <div class="code-header">
+                <span>Live edit test</span>
+                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <div class="code-body">logger.log('Test hot reload working inside Docker!');</div>
+            </div>
+            <p>
+              Save the file and watch your terminal: Nodemon detects the change through the bind mount <code>./src:/usr/src/app/src</code> and restarts the server in ~500ms without rebuilding the container!
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step-item">
+          <div class="step-circle">5</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Test All Databases Through REST Endpoints</span>
+              <span class="step-badge">API Verification</span>
+            </div>
+            <p>
+              Execute the automated test suite to verify Postgres, Mongo, and Redis in one command:
+            </p>
+            <div class="code-block-container">
+              <div class="code-header">
+                <span>Terminal command</span>
+                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <div class="code-body">make test-all</div>
+            </div>
+            <p>
+              Review the implementation of each test module:
+              <br>• <strong>Postgres:</strong> <code>src/modules/users/</code> (TypeORM repository)
+              <br>• <strong>Mongo:</strong> <code>src/modules/logs/</code> (Mongoose audit logs)
+              <br>• <strong>Redis:</strong> <code>src/modules/cache/</code> (Cache key/value with TTL)
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="step-item">
+          <div class="step-circle">6</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Simulate Production with Nginx</span>
+              <span class="step-badge">docker-compose.prod.yml</span>
+            </div>
+            <p>
+              Test how a real cloud deployment operates behind a reverse proxy:
+            </p>
+            <div class="code-block-container">
+              <div class="code-header">
+                <span>Run Production Simulation</span>
+                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <div class="code-body">make prod</div>
+            </div>
+            <p>
+              Now access <code>http://localhost/api/v1/health</code> directly on Port 80. Nginx handles the request, strips server tokens, applies rate-limiting, and forwards upstream to the internal NestJS container.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="step-item">
+          <div class="step-circle">7</div>
+          <div class="step-content">
+            <div class="step-title">
+              <span>Study the AWS Cloud Architecture Transition</span>
+              <span class="step-badge">aws/ directory</span>
+            </div>
+            <p>
+              Study <code>aws/README.md</code>, <code>aws/ecs-task-definition.json</code>, and <code>aws/buildspec.yml</code> to understand how the Docker container you built locally is pushed to Amazon ECR and deployed serverlessly to AWS ECS Fargate with AWS Secrets Manager.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: DOCKERFILE DEEP DIVE -->
+    <section id="dockerfile">
+      <div class="section-header">
+        <span class="section-badge">03</span>
+        <h2 class="section-title">Multi-Stage Dockerfile Deep Dive</h2>
+      </div>
+      <p class="section-desc">
+        Why use multi-stage builds? Because standard Dockerfiles bundle compilers, linters, and heavy development tools into the final image, ballooning image sizes to 1.5GB+ and exposing unnecessary security vulnerabilities.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🛡️ Signal Handling with <code>dumb-init</code></div>
+          <div class="card-body">
+            <p>
+              In Docker, the process running as <strong>PID 1</strong> does not receive standard Linux signals (<code>SIGTERM</code> / <code>SIGINT</code>) by default. When you run <code>docker stop</code>, Node.js ignores the signal and Docker forcefully kills it with <code>SIGKILL</code> after 10s.
+            </p>
+            <div class="code-block-container">
+              <div class="code-header"><span>Dockerfile instruction</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+              <div class="code-body">RUN apk add --no-cache dumb-init
+CMD ["dumb-init", "node", "dist/main.js"]</div>
+            </div>
+            <p>
+              <code>dumb-init</code> runs as PID 1, properly forwards signals to NestJS, allowing <code>app.enableShutdownHooks()</code> to close database connections gracefully.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">👤 Non-Root Security (<code>USER node</code>)</div>
+          <div class="card-body">
+            <p>
+              By default, Docker containers run as the root user. If an attacker discovers a remote code execution exploit in your application, they gain root access to the container and potentially the host kernel.
+            </p>
+            <div class="code-block-container">
+              <div class="code-header"><span>Hardening in Production stage</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+              <div class="code-body">USER node
+COPY --chown=node:node --from=build \
+  /usr/src/app/dist ./dist</div>
+            </div>
+            <p>
+              Running as <code>node</code> drops all superuser privileges, fulfilling CIS Docker Security benchmark requirements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: DEV VS PROD -->
+    <section id="stages">
+      <div class="section-header">
+        <span class="section-badge">04</span>
+        <h2 class="section-title">Development vs. Production Comparison</h2>
+      </div>
+      <p class="section-desc">
+        A clear side-by-side comparison of the configuration divergence between stages.
+      </p>
+
+      <div class="comp-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Development Mode (<code>docker-compose.yml</code>)</th>
+              <th>Production Mode (<code>docker-compose.prod.yml</code>)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Dockerfile Target</strong></td>
+              <td><code>target: development</code></td>
+              <td><code>target: production</code></td>
+            </tr>
+            <tr>
+              <td><strong>Process Runner</strong></td>
+              <td><code>nodemon</code> (ts-node compilation)</td>
+              <td><code>node dist/main.js</code> (Pure V8 engine)</td>
+            </tr>
+            <tr>
+              <td><strong>Source Code</strong></td>
+              <td>Mounted live: <code>./src:/usr/src/app/src:ro</code></td>
+              <td>Baked into immutable image layers</td>
+            </tr>
+            <tr>
+              <td><strong>Database Access</strong></td>
+              <td>Ports 5432, 27017, 6379 mapped to localhost</td>
+              <td><strong>Completely sealed</strong> inside private bridge network</td>
+            </tr>
+            <tr>
+              <td><strong>Public Gateway</strong></td>
+              <td>Direct access to NestJS on port 3000</td>
+              <td><strong>Nginx Reverse Proxy</strong> on port 80</td>
+            </tr>
+            <tr>
+              <td><strong>Node Inspector</strong></td>
+              <td>Port <code>9229</code> mapped for Chrome/VSCode debugging</td>
+              <td>Disabled for security</td>
+            </tr>
+            <tr>
+              <td><strong>Resource Limits</strong></td>
+              <td>Unbounded host resource allocation</td>
+              <td>Hard memory and CPU caps configured</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 5: NODEMON EXPLAINED -->
+    <section id="nodemon">
+      <div class="section-header">
+        <span class="section-badge">05</span>
+        <h2 class="section-title">Nodemon & Hot Reload in Docker</h2>
+      </div>
+      <p class="section-desc">
+        Why and how we configured Nodemon specifically for the development stage.
+      </p>
+
+      <div class="card">
+        <div class="card-title">💡 The macOS / Windows Bind Mount Gotcha</div>
+        <div class="card-body">
+          <p>
+            When Docker runs on macOS or Windows, it runs inside a lightweight Linux hypervisor. Standard Linux file watching uses the <code>inotify</code> kernel subsystem. However, filesystem events from macOS host disks do not always propagate through the Docker virtualization layer reliably.
+          </p>
+          <p style="margin-top: 10px;">
+            To guarantee 100% reliable hot reloading, we configured <code>nodemon.json</code> with polling:
+          </p>
+          <div class="code-block-container">
+            <div class="code-header"><span>nodemon.json</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+            <div class="code-body">{
+  "watch": ["src"],
+  "ext": "ts,js,json",
+  "exec": "ts-node -r tsconfig-paths/register src/main.ts",
+  "legacyWatch": true,
+  "pollingInterval": 500
+}</div>
+          </div>
+          <p>
+            <code>legacyWatch: true</code> polls the directory every 500ms, ensuring that code edits made in your IDE on Mac immediately trigger a restart inside the Linux container.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: THE THREE DATABASES -->
+    <section id="databases">
+      <div class="section-header">
+        <span class="section-badge">06</span>
+        <h2 class="section-title">The Three Databases & Caching Layer</h2>
+      </div>
+      <p class="section-desc">
+        How PostgreSQL, MongoDB, and Redis are configured, seeded, and integrated.
+      </p>
+
+      <div class="grid-3">
+        <!-- Postgres Card -->
+        <div class="card">
+          <div class="card-title" style="color: #60a5fa;">🐘 PostgreSQL 16</div>
+          <div class="card-body">
+            <p><strong>Driver:</strong> TypeORM + <code>pg</code></p>
+            <p><strong>Init Script:</strong> <code>docker/postgres/init.sql</code></p>
+            <p><strong>Health Check:</strong> <code>pg_isready -U postgres_user -d nest_docker_db</code></p>
+            <p style="margin-top: 10px;">
+              Provides relational data with foreign keys, transactional integrity, and native UUID generation (<code>uuid-ossp</code>).
+            </p>
+          </div>
+        </div>
+
+        <!-- Mongo Card -->
+        <div class="card">
+          <div class="card-title" style="color: #4ade80;">🍃 MongoDB 7.0</div>
+          <div class="card-body">
+            <p><strong>Driver:</strong> Mongoose + <code>@nestjs/mongoose</code></p>
+            <p><strong>Init Script:</strong> <code>docker/mongo/init.js</code></p>
+            <p><strong>Health Check:</strong> <code>mongosh --quiet --eval "db.adminCommand('ping').ok"</code></p>
+            <p style="margin-top: 10px;">
+              Used for audit logging and flexible JSON document storage with automated index creation.
+            </p>
+          </div>
+        </div>
+
+        <!-- Redis Card -->
+        <div class="card">
+          <div class="card-title" style="color: #f87171;">⚡ Redis 7.0</div>
+          <div class="card-body">
+            <p><strong>Driver:</strong> <code>ioredis</code> with retry strategy</p>
+            <p><strong>Config:</strong> <code>docker/redis/redis.conf</code></p>
+            <p><strong>Health Check:</strong> <code>redis-cli -a password ping</code></p>
+            <p style="margin-top: 10px;">
+              In-memory cache with <code>allkeys-lru</code> eviction, hybrid RDB snapshots, and AOF durability.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: BUG FIX STORY -->
+    <section id="bug-fix">
+      <div class="section-header">
+        <span class="section-badge">07</span>
+        <h2 class="section-title">The Schema Collision Bug & Solution</h2>
+      </div>
+      <p class="section-desc">
+        A critical real-world lesson on how TypeORM <code>synchronize: true</code> interacts with Docker database initialization scripts.
+      </p>
+
+      <div class="callout callout-rose">
+        <div class="callout-icon">🚨</div>
+        <div class="callout-content">
+          <div class="callout-title">The Error in Container Logs:</div>
+          <p><code>QueryFailedError: column "email" of relation "users" contains null values</code></p>
+          <p><code>[nodemon] app crashed - waiting for file changes before starting...</code></p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🔍 The Root Cause</div>
+          <div class="card-body">
+            <ol style="padding-left: 20px; line-height: 1.8;">
+              <li><code>init.sql</code> created the <code>users</code> table manually with <code>email VARCHAR(255)</code> and seeded an admin user.</li>
+              <li>In <code>user.entity.ts</code>, TypeORM defaults <code>@Column()</code> to <code>character varying</code> (without length limit).</li>
+              <li>TypeORM's schema synchronizer saw the slight type mismatch and generated an <code>ALTER TABLE</code> command to drop <code>email</code> and re-add it as <code>NOT NULL</code>.</li>
+              <li>Postgres rejected adding a <code>NOT NULL</code> column to an existing table with rows, crashing the container.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">✅ The Professional Solution</div>
+          <div class="card-body">
+            <ol style="padding-left: 20px; line-height: 1.8;">
+              <li><strong>Cleaned <code>init.sql</code>:</strong> Stripped table creation DDL from <code>init.sql</code> so it only installs extensions (<code>CREATE EXTENSION IF NOT EXISTS "uuid-ossp";</code>).</li>
+              <li><strong>Delegated DDL to TypeORM:</strong> Let TypeORM create tables cleanly matching its entity metadata.</li>
+              <li><strong>Application Bootstrap Seeder:</strong> Moved seeding into <code>UsersService.onApplicationBootstrap()</code>. If 0 users exist, NestJS seeds the admin user safely on boot.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: NGINX -->
+    <section id="nginx">
+      <div class="section-header">
+        <span class="section-badge">08</span>
+        <h2 class="section-title">Nginx Reverse Proxy & Security</h2>
+      </div>
+      <p class="section-desc">
+        How Nginx acts as the gatekeeper for incoming HTTP traffic in production.
+      </p>
+
+      <div class="card">
+        <div class="card-title">🛡️ Nginx Security & Performance Features (<code>nginx/conf.d/default.conf</code>)</div>
+        <div class="card-body">
+          <div class="grid-2" style="margin-top: 10px;">
+            <div>
+              <h4 style="color: #fff; margin-bottom: 6px;">1. Rate Limiting Protection</h4>
+              <p>Protects your NestJS API against brute-force and DDoS attacks by enforcing a maximum of 20 requests per second per IP with a burst buffer of 40 requests.</p>
+            </div>
+            <div>
+              <h4 style="color: #fff; margin-bottom: 6px;">2. Hardened Security Headers</h4>
+              <p>Injects <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and <code>X-XSS-Protection</code> to prevent clickjacking and MIME-type sniffing.</p>
+            </div>
+            <div>
+              <h4 style="color: #fff; margin-bottom: 6px;">3. Gzip Payload Compression</h4>
+              <p>Automatically compresses JSON, SVG, CSS, and JS responses to minimize network latency and bandwidth consumption.</p>
+            </div>
+            <div>
+              <h4 style="color: #fff; margin-bottom: 6px;">4. Upstream Connection Pooling</h4>
+              <p>Maintains persistent HTTP 1.1 keep-alive connections to upstream NestJS pods for maximum throughput.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: AWS -->
+    <section id="aws">
+      <div class="section-header">
+        <span class="section-badge">09</span>
+        <h2 class="section-title">AWS Cloud Production Architecture</h2>
+      </div>
+      <p class="section-desc">
+        How each local Docker Compose service transitions to managed AWS infrastructure.
+      </p>
+
+      <div class="comp-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Local Docker Compose Component</th>
+              <th>Production AWS Cloud Service</th>
+              <th>Why Transition to Cloud Equivalent?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>api</code> container</td>
+              <td><strong>AWS ECS on AWS Fargate</strong></td>
+              <td>Serverless container execution without managing EC2 OS patches.</td>
+            </tr>
+            <tr>
+              <td>Local Docker Cache</td>
+              <td><strong>Amazon ECR (Container Registry)</strong></td>
+              <td>Private, encrypted container image storage integrated with IAM.</td>
+            </tr>
+            <tr>
+              <td><code>nginx</code> container</td>
+              <td><strong>AWS Application Load Balancer (ALB)</strong></td>
+              <td>Auto-scaling HTTP/HTTPS load balancing with AWS Certificate Manager (free SSL).</td>
+            </tr>
+            <tr>
+              <td><code>postgres</code> container</td>
+              <td><strong>Amazon RDS for PostgreSQL</strong></td>
+              <td>Multi-AZ automated failover, automated point-in-time backups, and read replicas.</td>
+            </tr>
+            <tr>
+              <td><code>mongodb</code> container</td>
+              <td><strong>Amazon DocumentDB / Atlas</strong></td>
+              <td>Managed MongoDB-compatible cluster with 99.99% availability.</td>
+            </tr>
+            <tr>
+              <td><code>redis</code> container</td>
+              <td><strong>Amazon ElastiCache for Redis</strong></td>
+              <td>In-memory caching cluster with automatic failover and Redis cluster sharding.</td>
+            </tr>
+            <tr>
+              <td><code>.env</code> file</td>
+              <td><strong>AWS Secrets Manager & SSM</strong></td>
+              <td>Encrypted, auditable secrets injected directly into ECS Task Definitions.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 10: COMMAND MATRIX -->
+    <section id="commands">
+      <div class="section-header">
+        <span class="section-badge">10</span>
+        <h2 class="section-title">Command Matrix & Reference</h2>
+      </div>
+      <p class="section-desc">
+        All Makefile and Docker Compose commands with one-click copy.
+      </p>
+
+      <div class="grid-2" id="commandGrid">
+        <div class="command-card" data-cmd="dev">
+          <div class="cmd-name">make dev</div>
+          <div class="cmd-desc">Start development stack with nodemon hot-reloading</div>
+          <div class="cmd-box">
+            <span>make dev</span>
+            <button class="copy-btn" onclick="copyText('make dev', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="dev-build">
+          <div class="cmd-name">make dev-build</div>
+          <div class="cmd-desc">Force rebuild of dev image and start all containers</div>
+          <div class="cmd-box">
+            <span>make dev-build</span>
+            <button class="copy-btn" onclick="copyText('make dev-build', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="prod">
+          <div class="cmd-name">make prod</div>
+          <div class="cmd-desc">Start production simulation with Nginx & network isolation</div>
+          <div class="cmd-box">
+            <span>make prod</span>
+            <button class="copy-btn" onclick="copyText('make prod', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="test-all">
+          <div class="cmd-name">make test-all</div>
+          <div class="cmd-desc">Execute complete test suite across Postgres, Mongo & Redis</div>
+          <div class="cmd-box">
+            <span>make test-all</span>
+            <button class="copy-btn" onclick="copyText('make test-all', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="test-health">
+          <div class="cmd-name">make test-health</div>
+          <div class="cmd-desc">Verify health check endpoint (status of all 3 databases)</div>
+          <div class="cmd-box">
+            <span>make test-health</span>
+            <button class="copy-btn" onclick="copyText('make test-health', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="logs">
+          <div class="cmd-name">make logs</div>
+          <div class="cmd-desc">Stream consolidated logs from all active containers</div>
+          <div class="cmd-box">
+            <span>make logs</span>
+            <button class="copy-btn" onclick="copyText('make logs', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="shell-postgres">
+          <div class="cmd-name">make shell-postgres</div>
+          <div class="cmd-desc">Open an interactive psql shell inside PostgreSQL container</div>
+          <div class="cmd-box">
+            <span>make shell-postgres</span>
+            <button class="copy-btn" onclick="copyText('make shell-postgres', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="shell-mongo">
+          <div class="cmd-name">make shell-mongo</div>
+          <div class="cmd-desc">Open an interactive mongosh terminal inside MongoDB container</div>
+          <div class="cmd-box">
+            <span>make shell-mongo</span>
+            <button class="copy-btn" onclick="copyText('make shell-mongo', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="shell-redis">
+          <div class="cmd-name">make shell-redis</div>
+          <div class="cmd-desc">Open an interactive redis-cli terminal inside Redis container</div>
+          <div class="cmd-box">
+            <span>make shell-redis</span>
+            <button class="copy-btn" onclick="copyText('make shell-redis', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="command-card" data-cmd="clean">
+          <div class="cmd-name">make clean</div>
+          <div class="cmd-desc">Stop containers and wipe volume data cleanly for fresh reset</div>
+          <div class="cmd-box">
+            <span>make clean</span>
+            <button class="copy-btn" onclick="copyText('make clean', this)">Copy</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 11: TESTING CHEATSHEET -->
+    <section id="testing">
+      <div class="section-header">
+        <span class="section-badge">11</span>
+        <h2 class="section-title">Live Testing Cheatsheet</h2>
+      </div>
+      <p class="section-desc">
+        Copyable curl snippets to test individual endpoints from your terminal.
+      </p>
+
+      <div class="card">
+        <div class="card-title">🩺 1. Health Check Endpoint</div>
+        <div class="code-block-container">
+          <div class="code-header"><span>curl GET</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+          <div class="code-body">curl -s http://localhost:3000/api/v1/health | jq .</div>
+        </div>
+
+        <div class="card-title" style="margin-top: 20px;">🐘 2. PostgreSQL: Create User</div>
+        <div class="code-block-container">
+          <div class="code-header"><span>curl POST</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+          <div class="code-body">curl -X POST http://localhost:3000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"sarah@example.com","name":"Sarah Connor","role":"admin"}'</div>
+        </div>
+
+        <div class="card-title" style="margin-top: 20px;">🍃 3. MongoDB: Insert Audit Log</div>
+        <div class="code-block-container">
+          <div class="code-header"><span>curl POST</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+          <div class="code-body">curl -X POST http://localhost:3000/api/v1/logs \
+  -H "Content-Type: application/json" \
+  -d '{"action":"AUTH_LOGIN","level":"INFO","details":"User signed in via token","metadata":{"ip":"127.0.0.1"}}'</div>
+        </div>
+
+        <div class="card-title" style="margin-top: 20px;">⚡ 4. Redis: Store Key-Value Cache with TTL</div>
+        <div class="code-block-container">
+          <div class="code-header"><span>curl POST</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+          <div class="code-body">curl -X POST http://localhost:3000/api/v1/cache \
+  -H "Content-Type: application/json" \
+  -d '{"key":"session:user_456","value":{"user":"Sarah","active":true},"ttlSeconds":300}'</div>
+        </div>
+
+        <div class="card-title" style="margin-top: 20px;">⚡ 5. Redis: Fetch Cached Value</div>
+        <div class="code-block-container">
+          <div class="code-header"><span>curl GET</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
+          <div class="code-body">curl http://localhost:3000/api/v1/cache/session:user_456</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Tab switcher
+  function switchTab(paneId, btn) {
+    const parent = btn.closest('.tab-container');
+    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    parent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(paneId).classList.add('active');
+  }
+
+  // Copy helper for code snippet boxes
+  function copySnippet(button) {
+    const container = button.closest('.code-block-container');
+    const text = container.querySelector('.code-body').innerText.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = button.innerText;
+      button.innerText = 'Copied!';
+      button.classList.add('copied');
+      setTimeout(() => {
+        button.innerText = orig;
+        button.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // Copy helper for text directly
+  function copyText(str, button) {
+    navigator.clipboard.writeText(str).then(() => {
+      const orig = button.innerText;
+      button.innerText = 'Copied!';
+      button.classList.add('copied');
+      setTimeout(() => {
+        button.innerText = orig;
+        button.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // Search filter
+  document.getElementById('cmdSearch').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.command-card');
+    cards.forEach(card => {
+      const text = card.innerText.toLowerCase();
+      if (text.includes(query)) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+
+  // Scrollspy for sidebar links
+  const sections = document.querySelectorAll('section, .hero');
+  const navLinks = document.querySelectorAll('.sidebar-nav .nav-item');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.offsetTop - 120;
+      if (window.pageYOffset >= top) {
+        current = sec.getAttribute('id');
+      }
+    });
+
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (current && link.getAttribute('href') === '#' + current) {
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
